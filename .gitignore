@@ -1,0 +1,27 @@
+# Ambientes virtuais
+.venv/
+venv/
+ENV/
+
+# Python cache e compilação
+__pycache__/
+*.py[cod]
+*$py.class
+*.pytest_cache/
+
+# Streamlit
+.streamlit/
+
+# Arquivos temporários do Microsoft Word / LibreOffice
+~$*.docx
+*.tmp
+*.temp
+
+# Saídas geradas (minutas geradas em testes locais)
+output/
+dist/
+build/
+
+# Configurações de IDE
+.vscode/
+.idea/
