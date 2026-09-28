@@ -1,71 +1,92 @@
 from pathlib import Path
-from src.core.modelos import DesenhoItem, RelatorioDescritivoPI
-from src.exportador.gerador_docx import gerar_relatorio_pi
+from PIL import Image, ImageDraw
+from src.core.modelos import (
+    DesenhoItem,
+    PatentePICompleta,
+    ReivindicacaoItem,
+    RelatorioDescritivoPI,
+    ResumoPI,
+)
+from src.exportador.gerador_docx import gerar_pacote_completo_pi
 
+def criar_imagem_mock(caminho: Path):
+    """Cria uma imagem simples com moldura para testar a inserção de figuras."""
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    img = Image.new("RGB", (600, 400), color=(255, 255, 255))
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([20, 20, 580, 380], outline="black", width=3)
+    draw.text((200, 190), "MOCK DE FIGURA 1 - INPI", fill="black")
+    img.save(caminho)
 
-def executar_teste_geracao():
+def main():
     print("=" * 60)
-    print("Iniciando teste de geração local do Relatório Descritivo (PI)...")
+    print("TESTE LOCAL: GERAÇÃO DO PACOTE COMPLETO DE PATENTE (PI)")
     print("=" * 60)
 
-    # 1. Cria os dados de exemplo correspondentes ao que o template espera
-    dados_exemplo = RelatorioDescritivoPI(
-        titulo="SISTEMA E MÉTODO INTELIGENTE PARA MONITORAMENTO TÉRMICO EM MANUFATURA ADITIVA",
-        campo_da_invencao=(
-            "A presente invenção insere-se no campo da engenharia mecânica e computação aplicada, "
-            "mais especificamente voltada a sistemas de controle e sensoriamento térmico em tempo "
-            "real para processos industriais de manufatura aditiva metálica."
+    # 1. Cria uma imagem de teste
+    caminho_imagem = Path("testes/temp_figura_1.png")
+    criar_imagem_mock(caminho_imagem)
+
+    # 2. Monta o objeto completo PatentePICompleta
+    patente = PatentePICompleta(
+        relatorio=RelatorioDescritivoPI(
+            titulo="SISTEMA INTELIGENTE DE CONTROLE TÉRMICO EM MANUFATURA ADITIVA",
+            campo_da_invencao="Engenharia mecânica e ciência dos materiais aplicada à manufatura aditiva.",
+            estado_da_tecnica="Processos convencionais apresentam tempo de resposta lento gerando descarte de peças.",
+            problema_e_vantagens="A invenção reduz defeitos térmicos em até 40% usando sensoriamento em malha fechada.",
+            desenhos=[
+                DesenhoItem(numero_figura="1", caminho_imagem=str(caminho_imagem), descricao_breve="apresenta o diagrama em blocos.")
+            ],
+            paragrafos_descricao=[
+                "Conforme ilustrado na Figura 1, o sistema compreende uma unidade de processamento central (1).",
+                "O sensor térmico transmite dados a 500 Hz para o módulo de controle."
+            ],
+            exemplos_concretizacao="Em um ensaio de 12 horas com liga de titânio Ti-6Al-4V, a estabilidade foi de 99,8%."
         ),
-        estado_da_tecnica=(
-            "Atualmente, os processos convencionais de manufatura aditiva utilizam pirômetros ópticos "
-            "ou termopares fixos externos. Esses dispositivos apresentam tempo de resposta lento e baixa "
-            "resolução espacial, impossibilitando a detecção precoce de zonas de superaquecimento na poça de fusão."
-        ),
-        problema_e_vantagens=(
-            "A presente invenção visa superar as desvantagens citadas propondo uma malha fechada de monitoramento "
-            "multiespectral em alta frequência, reduzindo em até 40% a taxa de descarte de peças por empenamento térmico."
-        ),
+        quadro_reivindicatorio=[
+            ReivindicacaoItem(
+                numero=1,
+                tipo="independente",
+                preambulo="SISTEMA INTELIGENTE DE CONTROLE TÉRMICO EM MANUFATURA ADITIVA",
+                caracterizacao="compreender um sensor óptico de alta frequência acoplado a um controlador adaptativo de malha fechada"
+            ),
+            ReivindicacaoItem(
+                numero=2,
+                tipo="dependente",
+                dependencia=1,
+                preambulo="SISTEMA INTELIGENTE DE CONTROLE TÉRMICO",
+                caracterizacao="o sensor óptico operar em uma taxa de amostragem de pelo menos 500 Hz"
+            )
+        ],
         desenhos=[
-            DesenhoItem(
-                numero_figura="1",
-                descricao_breve="apresenta o diagrama esquemático em blocos do sistema de monitoramento.",
-            ),
-            DesenhoItem(
-                numero_figura="2",
-                descricao_breve="ilustra o fluxo operacional do algoritmo de controle térmico preditivo.",
-            ),
+            DesenhoItem(numero_figura="1", caminho_imagem=str(caminho_imagem))
         ],
-        paragrafos_descricao=[
-            (
-                "Conforme ilustrado na Figura 1, o sistema compreende uma unidade de processamento central (1) "
-                "acoplada a uma câmera termográfica multiespectral (2) e um bico extrusor (3)."
-            ),
-            (
-                "A câmera multiespectral (2) captura imagens térmicas da poça de fusão a uma taxa de 500 quadros "
-                "por segundo, transmitindo os dados via barramento de alta velocidade para a unidade central (1)."
-            ),
-            (
-                "Em caso de desvio térmico superior a 5% da temperatura de referência, o algoritmo preditivo "
-                "ajusta dinamicamente a potência do feixe laser antes da deposição da camada subsequente."
-            ),
-        ],
-        exemplos_concretizacao=(
-            "Em uma concretização preferencial da invenção, o módulo sensor foi integrado a uma impressora 3D "
-            "do tipo DED (Directed Energy Deposition), operando com liga de titânio Ti-6Al-4V e comprovando a "
-            "estabilidade da poça de fusão durante 12 horas consecutivas de operação ininterrupta."
-        ),
+        resumo=ResumoPI(
+            titulo="SISTEMA INTELIGENTE DE CONTROLE TÉRMICO EM MANUFATURA ADITIVA",
+            texto=(
+                "A presente invenção refere-se a um sistema inteligente de controle térmico "
+                "aplicado à manufatura aditiva metálica. O sistema introduz um mecanismo em "
+                "malha fechada capaz de monitorar em tempo real a temperatura da poça de fusão "
+                "por meio de sensoriamento óptico de alta frequência acoplado a um atuador. "
+                "Diferencia-se do estado da técnica por corrigir dinamicamente variações térmicas "
+                "antes da deposição da camada subsequente, garantindo integridade estrutural e "
+                "reduzindo drasticamente a taxa de refugo em peças aeroespaciais de titânio."
+            )
+        )
     )
 
-    # 2. Caminho do arquivo de saída
-    caminho_saida = Path(__file__).resolve().parent / "saida_teste_relatorio.docx"
+    # 3. Executa a geração do pacote na pasta 'testes/saida_pacote_pi'
+    pasta_saida = Path("testes/saida_pacote_pi")
+    resultados = gerar_pacote_completo_pi(
+        patente=patente,
+        pasta_destino=pasta_saida,
+        exportar_pdf=False,  # Mude para True se já instalou o docx2pdf e tem o Word
+        criar_zip=True
+    )
 
-    # 3. Executa a geração
-    arquivo_gerado = gerar_relatorio_pi(dados_exemplo, caminho_saida)
-
-    print(f"\n[SUCESSO] Documento gerado com êxito!")
-    print(f"Caminho do arquivo: {arquivo_gerado.resolve()}")
-    print("=" * 60)
-
+    print("\n[SUCESSO] Pacote gerado!")
+    for nome, caminho in resultados.items():
+        print(f" -> {nome}: {caminho}")
 
 if __name__ == "__main__":
-    executar_teste_geracao()
+    main()

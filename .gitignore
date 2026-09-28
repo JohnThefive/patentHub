@@ -25,3 +25,7 @@ build/
 # Configurações de IDE
 .vscode/
 .idea/
+
+
+#testes 
+testes/
