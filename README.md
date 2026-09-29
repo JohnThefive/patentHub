@@ -13,3 +13,6 @@ Aplicação em Python para automatizar a estruturação inicial de minutas de pa
 - **Testes:** Pytest
 
 O Projeto ainda está em desenvolvimento, todas as atualizaçõe serão documentadas aqui. 
+
+Comando para fazer testes 
+python -m testes.test_exportador

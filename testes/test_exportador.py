@@ -8,6 +8,9 @@ from src.core.modelos import (
     ResumoPI,
 )
 from src.exportador.gerador_docx import gerar_pacote_completo_pi
+from src.core.modelos import RelatorioDescritivoMU, PatenteMUCompleta
+from src.exportador.gerador_docx import gerar_pacote_completo_mu
+
 
 def criar_imagem_mock(caminho: Path):
     """Cria uma imagem simples com moldura para testar a inserção de figuras."""
@@ -88,5 +91,52 @@ def main():
     for nome, caminho in resultados.items():
         print(f" -> {nome}: {caminho}")
 
+
+def test_pacote_mu():
+    caminho_figura = Path("testes/temp_figura_1.png")
+    
+    patente_mu = PatenteMUCompleta(
+        relatorio=RelatorioDescritivoMU(
+            titulo="DISPOSIÇÃO CONSTRUTIVA INTRODUZIDA EM SUPORTE ERGONÔMICO REGULÁVEL",
+            campo_do_modelo="Mobiliário ergonômico e suportes para equipamentos de escritório.",
+            estado_da_tecnica="Os suportes convencionais possuem regulagem por parafusos rosqueados lentos e de difícil aperto.",
+            melhoria_funcional="A nova disposição introduz um mecanismo de engate rápido por trava elástica que reduz o tempo de ajuste.",
+            desenhos=[
+                DesenhoItem(numero_figura="1", caminho_imagem=str(caminho_figura), descricao_breve="mostra a vista em perspectiva explodida.")
+            ],
+            paragrafos_descricao=[
+                "Conforme ilustrado na Figura 1, o suporte compreende uma base (1), uma haste articulada (2) e uma presilha elástica (3).",
+                "O acionamento da presilha (3) libera o movimento angular da haste (2) sem necessidade de ferramentas adicionais."
+            ]
+        ),
+        quadro_reivindicatorio=[
+            ReivindicacaoItem(
+                numero=1,
+                tipo="independente",
+                preambulo="DISPOSIÇÃO CONSTRUTIVA INTRODUZIDA EM SUPORTE ERGONÔMICO REGULÁVEL",
+                caracterizacao="compreender uma presilha de engate elástico (3) acoplada diretamente à junta articulada da haste (2)"
+            )
+        ],
+        desenhos=[
+            DesenhoItem(numero_figura="1", caminho_imagem=str(caminho_figura))
+        ],
+        resumo=ResumoPI(
+            titulo="DISPOSIÇÃO CONSTRUTIVA INTRODUZIDA EM SUPORTE ERGONÔMICO REGULÁVEL",
+            texto=(
+                "O presente modelo de utilidade refere-se a uma nova disposição construtiva "
+                "aplicada a suportes ergonômicos de mesa. O objeto compreende uma base estável, "
+                "uma haste de sustentação e uma trava rápida de posicionamento por pressão elástica. "
+                "Diferencia-se dos suportes conhecidos por dispensar parafusos e manípulos de aperto manual, "
+                "permitindo o ajuste de altura e inclinação com uma única mão de forma segura e rápida, "
+                "otimizando a ergonomia no ambiente de trabalho e barateando custos de manufatura."
+            )
+        )
+    )
+    saida = Path("testes/saida_pacote_mu")
+    gerar_pacote_completo_mu(patente_mu, pasta_destino=saida, exportar_pdf=False, criar_zip=True)
+    print("\n[SUCESSO] Pacote de MU gerado com sucesso em testes/saida_pacote_mu!")
+
+
 if __name__ == "__main__":
     main()
+    test_pacote_mu()

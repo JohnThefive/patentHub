@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from docx.shared import Mm
 from docxtpl import DocxTemplate, InlineImage
+from src.core.modelos import RelatorioDescritivoMU, PatenteMUCompleta
 
 from src.core.modelos import (
     DesenhoItem,
@@ -15,6 +16,9 @@ from src.core.modelos import (
 # Caminhos base dos templates em Assets
 DIRETORIO_RAIZ = Path(__file__).resolve().parent.parent.parent
 PASTA_TEMPLATES = DIRETORIO_RAIZ / "Assets" / "templates" / "arquivos_patente_pi"
+
+PASTA_TEMPLATES_MU = DIRETORIO_RAIZ / "Assets" / "templates" / "arquivos_patentes_mu"
+TEMPLATE_RELATORIO_MU = PASTA_TEMPLATES_MU / "01_Exemplo_de_MU_Relatorio_Descritivo.docx"
 
 TEMPLATE_RELATORIO = PASTA_TEMPLATES / "01_template_PI_relatorio_descritivo.docx"
 TEMPLATE_REIVINDICACOES = PASTA_TEMPLATES / "02_Exemplo_de_PI_quadro_reinvendictorio.docx"
@@ -140,4 +144,59 @@ def gerar_pacote_completo_pi(
                 zipf.write(caminho, arcname=caminho.name)
         arquivos_gerados["pacote_zip"] = caminho_zip
 
+    return arquivos_gerados
+
+
+# --------------------------------Geradores para patente de utilidade (MU) --------------------
+def gerar_relatorio_mu(dados: RelatorioDescritivoMU, caminho_saida: Path) -> Path:
+    """Carrega o template de Relatório Descritivo de MU e gera o .docx."""
+    if not TEMPLATE_RELATORIO_MU.exists():
+        raise FileNotFoundError(f"Template de MU não encontrado em: {TEMPLATE_RELATORIO_MU}")
+    doc = DocxTemplate(TEMPLATE_RELATORIO_MU)
+    doc.render({"relatorio": dados.model_dump()})
+    caminho_saida.parent.mkdir(parents=True, exist_ok=True)
+    doc.save(caminho_saida)
+    return caminho_saida
+def gerar_pacote_completo_mu(
+    patente: PatenteMUCompleta,
+    pasta_destino: Path,
+    exportar_pdf: bool = False,
+    criar_zip: bool = True
+) -> Dict[str, Path]:
+    """
+    Gera o pacote de 4 documentos formais do pedido de Modelo de Utilidade (MU),
+    reaproveitando os geradores de Quadro Reivindicatório, Desenhos e Resumo.
+    """
+    pasta_destino.mkdir(parents=True, exist_ok=True)
+    arquivos_gerados: Dict[str, Path] = {}
+    # 1. Relatório Descritivo de MU (Específico)
+    arq_relatorio = pasta_destino / "01_Relatorio_Descritivo_MU.docx"
+    gerar_relatorio_mu(patente.relatorio, arq_relatorio)
+    arquivos_gerados["relatorio_docx"] = arq_relatorio
+    # 2. Quadro Reivindicatório (Reaproveitado)
+    arq_reivindicacoes = pasta_destino / "02_Quadro_Reivindicatorio_MU.docx"
+    gerar_quadro_reivindicatorio_pi(patente.quadro_reivindicatorio, arq_reivindicacoes)
+    arquivos_gerados["reivindicacoes_docx"] = arq_reivindicacoes
+    # 3. Desenhos (Reaproveitado)
+    arq_desenhos = pasta_destino / "03_Desenhos_MU.docx"
+    gerar_desenhos_pi(patente.desenhos, arq_desenhos)
+    arquivos_gerados["desenhos_docx"] = arq_desenhos
+    # 4. Resumo (Reaproveitado)
+    arq_resumo = pasta_destino / "04_Resumo_MU.docx"
+    gerar_resumo_pi(patente.resumo, arq_resumo)
+    arquivos_gerados["resumo_docx"] = arq_resumo
+    # Conversão em PDF (se habilitado)
+    if exportar_pdf:
+        for chave in list(arquivos_gerados.keys()):
+            caminho_docx = arquivos_gerados[chave]
+            pdf = converter_docx_para_pdf(caminho_docx)
+            if pdf:
+                arquivos_gerados[chave.replace("_docx", "_pdf")] = pdf
+    # Pacote ZIP
+    if criar_zip:
+        caminho_zip = pasta_destino / "Pacote_Minutas_MU.zip"
+        with zipfile.ZipFile(caminho_zip, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for caminho in arquivos_gerados.values():
+                zipf.write(caminho, arcname=caminho.name)
+        arquivos_gerados["pacote_zip"] = caminho_zip
     return arquivos_gerados

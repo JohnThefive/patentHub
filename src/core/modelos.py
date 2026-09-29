@@ -65,7 +65,10 @@ class ReivindicacaoItem(BaseModel):
 # ==============================================================================
 class DesenhoItem(BaseModel):
     numero_figura: str = Field(..., description="Identificador da figura (ex: '1', '2A')")
-    caminho_imagem: str = Field(..., description="Caminho local da imagem enviada pelo usuário")
+    caminho_imagem: str = Field(
+        default="", 
+        description="Caminho local da imagem enviada pelo usuário"
+    )
     descricao_breve: str = Field(
         default="", 
         description="Descrição sucinta para referência no Relatório Descritivo"
@@ -74,6 +77,8 @@ class DesenhoItem(BaseModel):
     @field_validator("caminho_imagem")
     @classmethod
     def validar_arquivo_existe(cls, v: str) -> str:
+        if not v:
+            return v
         caminho = Path(v)
         if not caminho.exists() or not caminho.is_file():
             raise ValueError(f"O arquivo de imagem não foi encontrado no caminho: {v}")
@@ -120,3 +125,57 @@ class PatentePICompleta(BaseModel):
     quadro_reivindicatorio: List[ReivindicacaoItem]
     desenhos: List[DesenhoItem]
     resumo: ResumoPI
+
+# ==============================================================================
+# 6. RELATPRIO DESCRITIVO MU 
+# ==============================================================================
+class RelatorioDescritivoMU(BaseModel):
+    titulo: str = Field(
+        ...,
+        min_length=10,
+        description="Título do modelo (ex: DISPOSIÇÃO CONSTRUTIVA EM SUPORTE ARTICULADO)"
+    )
+    campo_do_modelo: str = Field(
+        ...,
+        min_length=10,
+        description="Setor prático de aplicação do objeto"
+    )
+    estado_da_tecnica: str = Field(
+        ...,
+        min_length=10,
+        description="Descrição dos objetos similares existentes e suas deficiências"
+    )
+    melhoria_funcional: str = Field(
+        ...,
+        min_length=10,
+        description="Apresentação da nova forma/disposição e a melhoria prática gerada"
+    )
+    desenhos: List[DesenhoItem] = Field(
+        ..., 
+        min_length=1, 
+        description="Desenhos são indispensáveis em MU (Art. 9º LPI)"
+    )
+    paragrafos_descricao: List[str] = Field(
+        default_factory=list,
+        description="Detalhamento das partes e encaixes referenciando as figuras"
+    )
+
+    @field_validator("titulo")
+    @classmethod
+    def validar_padrao_titulo_mu(cls, v: str) -> str:
+        """Orienta o usuário conforme a diretriz formal do INPI para títulos de MU."""
+        titulo_upper = v.strip().upper()
+        prefixos_validos = ("DISPOSIÇÃO CONSTRUTIVA", "DISPOSIÇÃO INTRODUZIDA", "APERFEIÇOAMENTO")
+        if not any(titulo_upper.startswith(p) for p in prefixos_validos):
+            # Não bloqueia totalmente, mas pode ser ajustado para padronização
+            pass
+        return v
+
+
+class PatenteMUCompleta(BaseModel):
+    """Pacote completo de documentos para pedido de Modelo de Utilidade (MU)."""
+    relatorio: RelatorioDescritivoMU
+    quadro_reivindicatorio: List[ReivindicacaoItem]
+    desenhos: List[DesenhoItem]
+    resumo: ResumoPI
+
